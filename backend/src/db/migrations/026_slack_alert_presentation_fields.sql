@@ -1,0 +1,9 @@
+ALTER TABLE slack_alert_events
+  ADD COLUMN IF NOT EXISTS team TEXT,
+  ADD COLUMN IF NOT EXISTS runbook TEXT,
+  ADD COLUMN IF NOT EXISTS source_metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE slack_normalized_alerts
+  ADD COLUMN IF NOT EXISTS team TEXT,
+  ADD COLUMN IF NOT EXISTS runbook TEXT,
+  ADD COLUMN IF NOT EXISTS source_metadata JSONB NOT NULL DEFAULT '{}'::jsonb;

@@ -1,0 +1,55 @@
+const GAP_PRECEDENCE = Object.freeze([
+  'UNKNOWN_SOURCE',
+  'IDENTITY_MISSING',
+  'MAPPING_CONFLICT',
+  'SOURCE_NOT_SUPPORTED',
+  'CANDIDATE_ONLY_SOURCE_MAPPING',
+  'NO_ACCEPTED_SOURCE_MAPPING',
+  'SOURCE_TELEMETRY_NOT_QUERIED',
+  'SOURCE_TELEMETRY_TIMEOUT',
+  'SOURCE_TELEMETRY_ERROR',
+  'SOURCE_TELEMETRY_UNAVAILABLE',
+  'SOURCE_TELEMETRY_OUTSIDE_WINDOW',
+  'SOURCE_TELEMETRY_INSUFFICIENT',
+  'OPERATIONS_LIFECYCLE_INSUFFICIENT',
+  'JIRA_NOT_INSPECTED',
+  'JIRA_NO_CONFIRMED_RELATIONSHIP',
+  'SLACK_NOT_INSPECTED',
+  'SLACK_CONTEXT_ONLY',
+  'CONFLICTING_EVIDENCE',
+  'INSUFFICIENT_COMBINED_EVIDENCE',
+  'OTHER',
+]);
+
+const GAP_DEFINITIONS = Object.freeze({
+  CANDIDATE_ONLY_SOURCE_MAPPING: { potential: 'HIGH', nextSource: 'IDENTITY_MAPPING', action: 'Confirm or reject the deterministic candidate mapping before querying source telemetry.' },
+  CONFLICTING_EVIDENCE: { potential: 'MEDIUM', nextSource: 'OPERATIONS', action: 'Reconcile the contradictory source and lifecycle evidence.' },
+  IDENTITY_MISSING: { potential: 'MEDIUM', nextSource: 'IDENTITY_MAPPING', action: 'Extract a stable source entity identifier from structured Operations fields.' },
+  INSUFFICIENT_COMBINED_EVIDENCE: { potential: 'LOW', nextSource: 'OPERATIONS', action: 'Collect another independent, timestamp-compatible evidence source.' },
+  JIRA_NOT_INSPECTED: { potential: 'MEDIUM', nextSource: 'JIRA', action: 'Inspect ACC Jira for an exact alert or canonical entity relationship.' },
+  JIRA_NO_CONFIRMED_RELATIONSHIP: { potential: 'LOW', nextSource: 'JIRA', action: 'Review candidate Jira relationships; absence alone does not determine actionability.' },
+  MAPPING_CONFLICT: { potential: 'MEDIUM', nextSource: 'IDENTITY_MAPPING', action: 'Resolve the entity or environment conflict before source validation.' },
+  NO_ACCEPTED_SOURCE_MAPPING: { potential: 'MEDIUM', nextSource: 'IDENTITY_MAPPING', action: 'Create or confirm an exact deterministic source mapping.' },
+  OPERATIONS_LIFECYCLE_INSUFFICIENT: { potential: 'LOW', nextSource: 'OPERATIONS', action: 'Capture a meaningful operator action, verified lifecycle outcome, or closure evidence.' },
+  OTHER: { potential: 'UNKNOWN', nextSource: 'NONE', action: 'Inspect the evidence package manually.' },
+  SLACK_CONTEXT_ONLY: { potential: 'LOW', nextSource: 'SLACK', action: 'Look for a concrete remediation or escalation tied to the exact alert number.' },
+  SLACK_NOT_INSPECTED: { potential: 'MEDIUM', nextSource: 'SLACK', action: 'Inspect Slack using the exact Operations alert number.' },
+  SOURCE_NOT_SUPPORTED: { potential: 'LOW', nextSource: 'NONE', action: 'Add a read-only integration for this source before source telemetry can be evaluated.' },
+  SOURCE_TELEMETRY_ERROR: { potential: 'HIGH', nextSource: 'SOURCE', action: 'Correct the bounded read-only source query and retry later.' },
+  SOURCE_TELEMETRY_INSUFFICIENT: { potential: 'MEDIUM', nextSource: 'SOURCE', action: 'Collect structured metrics or state transitions sufficient for a safe decision.' },
+  SOURCE_TELEMETRY_NOT_QUERIED: { potential: 'HIGH', nextSource: 'SOURCE', action: 'Run a bounded read-only query for the occurrence window.' },
+  SOURCE_TELEMETRY_OUTSIDE_WINDOW: { potential: 'MEDIUM', nextSource: 'SOURCE', action: 'Verify historical retention and query the exact occurrence window.' },
+  SOURCE_TELEMETRY_TIMEOUT: { potential: 'HIGH', nextSource: 'SOURCE', action: 'Retry the bounded source query after resolving the timeout.' },
+  SOURCE_TELEMETRY_UNAVAILABLE: { potential: 'MEDIUM', nextSource: 'SOURCE', action: 'Restore read-only source availability or historical access.' },
+  UNKNOWN_SOURCE: { potential: 'LOW', nextSource: 'OPERATIONS', action: 'Populate the authoritative integration/source identity in Operations.' },
+});
+
+const NOISE_EVIDENCE_GAP_CONFIG = Object.freeze({
+  analysisVersion: 'phase3.2-evidence-gap-v1',
+  cacheTtlMs: 5 * 60 * 1000,
+  gapDefinitions: GAP_DEFINITIONS,
+  gapPrecedence: GAP_PRECEDENCE,
+  supportedMonitoringSources: Object.freeze(['AppDynamics', 'Grafana', 'Nagios', 'ThousandEyes']),
+});
+
+module.exports = { GAP_DEFINITIONS, GAP_PRECEDENCE, NOISE_EVIDENCE_GAP_CONFIG };

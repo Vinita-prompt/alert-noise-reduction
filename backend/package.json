@@ -1,0 +1,51 @@
+{
+  "name": "alert-noise-reduction-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Express and PostgreSQL API for the Alert Noise Reduction System.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node src/server.js",
+    "dev": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node src/server.js",
+    "auth:hash-password": "node scripts/hashDevelopmentAuthPassword.js",
+    "db:migrate": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/runProductionMigrations.js",
+    "deploy:validate-config": "node scripts/validateProductionConfig.js",
+    "backfill:operations-24h": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/backfillOperationsPopulation24h.js",
+    "diagnose:thousandeyes-secondary": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/diagnoseThousandEyesSecondary.js",
+    "diagnose:episode-correlations": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/discoverEpisodeCorrelations.js",
+    "diagnose:identity-enrichment": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reportIdentityRelationshipEnrichment.js",
+    "evaluate:phase12": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/evaluatePhase12Population.js",
+    "evaluate:phase13": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/evaluatePhase13Population.js",
+    "evaluate:phase14": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/evaluatePhase14Population.js",
+    "evaluate:episodes": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/evaluatePhase14Population.js",
+    "report:phase13": "node scripts/reportPhase13DecisionQuality.js",
+    "report:phase14": "node scripts/reportPhase14MonitoringLifecycle.js",
+    "report:episodes": "node scripts/reportEpisodeDiagnostics.js",
+    "report:occurrence-aware-episodes": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reportOccurrenceAwareEpisodeReplay.js",
+    "reconcile:learning-incidents": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reconcileHistoricalIncidents24h.js",
+    "reconcile:appdynamics-evidence": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reconcileAppDynamicsEvidence24h.js",
+    "reconcile:grafana-evidence": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reconcileGrafanaEvidence24h.js",
+    "reconcile:nagios-evidence": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reconcileNagiosEvidence24h.js",
+    "reconcile:source-evidence": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reconcileSourceEvidence24h.js",
+    "refresh:learning-dataset": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/refreshLearningDataset24h.js",
+    "experiment:incident-risk": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/trainIncidentRiskExperiment.js",
+    "ml:dataset": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/buildMlDataset.js",
+    "ml:train": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/trainMlShadow.js",
+    "ml:evaluate": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/evaluateMlShadow.js",
+    "ml:predict": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/predictMlShadow.js",
+    "reconstruct:appdynamics-jira-outcomes": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/reconstructAppDynamicsJiraOutcomes.js",
+    "refresh:slack-alerts": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/refreshSlackAlertNormalization.js",
+    "sync:slack-alerts": "NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/syncSlackAlertHistory.js",
+    "capacity:test": "CAPACITY_LOAD_TEST=isolated NODE_EXTRA_CA_CERTS=./ABCFSROOTCA.pem node scripts/loadTestCapacity.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

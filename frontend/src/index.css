@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #F8FAFC;
+  color: #172033;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #99f6e4;
+  color: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid #0F766E;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .cc-card { @apply rounded-2xl border border-[#E2E8F0] bg-white shadow-sm; }
+  .cc-title { @apply mt-1 text-2xl font-semibold tracking-tight text-[#172033] sm:text-3xl; }
+  .cc-subtitle { @apply mt-2 max-w-3xl text-sm leading-6 text-[#64748B]; }
+  .cc-eyebrow { @apply text-[10px] font-bold uppercase tracking-[0.16em] text-[#0F766E]; }
+  .cc-field { @apply block text-xs font-semibold text-slate-700; }
+  .cc-input { @apply mt-2 h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#172033] outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-teal-100; }
+  .cc-button-primary { @apply inline-flex h-11 items-center gap-2 rounded-xl bg-[#0F766E] px-4 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50; }
+  .cc-button-secondary { @apply inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50; }
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.grafana-dashboard-panel {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.grafana-metric-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: #f1f5f9;
+  gap: 1px;
+}
+
+.grafana-metric-cell {
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  background: #fff;
+}
+
+.grafana-series-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+}
+
+@container (min-width: 420px) {
+  .grafana-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 660px) {
+  .grafana-metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 860px) {
+  .grafana-metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

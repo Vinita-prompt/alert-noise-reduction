@@ -1,0 +1,68 @@
+import { useCallback, useEffect, useState } from 'react';
+import {
+  AlertTriangle, BrainCircuit, Database, GitCompareArrows, RefreshCw, ShieldCheck, Target,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  getHumanVerificationSummary, getMlMetrics, getMlStatus,
+  getMlTrainingDataset, getModelPerformance,
+} from '../services/api.js';
+
+const number = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
+const readable = (value) => String(value || 'UNKNOWN')
+  .replaceAll('NEEDS_REVIEW', 'INSUFFICIENT_EVIDENCE')
+  .replaceAll('_', ' ');
+const percentage = (value) => value === null || value === undefined ? '—' : `${(Number(value) * 100).toFixed(1)}%`;
+
+function Badge({ value }) {
+  const normalized = String(value || 'UNKNOWN').toUpperCase();
+  const tone = normalized.includes('SHADOW') ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+    : ['INCIDENT', 'FAILED'].includes(normalized) ? 'border-rose-200 bg-rose-50 text-rose-700'
+      : normalized === 'NOISE' ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : 'border-amber-200 bg-amber-50 text-amber-800';
+  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.08em] ${tone}`}>{readable(value)}</span>;
+}
+
+function Metric({ icon: Icon, label, value, helper }) {
+  return <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p><p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-[10px] leading-4 text-slate-500">{helper}</p></div><span className="rounded-xl bg-blue-50 p-2 text-blue-700"><Icon className="h-4 w-4" /></span></div></article>;
+}
+
+function ClassMetrics({ label, values }) {
+  return <article className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"><div className="flex items-center justify-between gap-2"><p className="text-xs font-bold text-slate-900">{readable(label)}</p><Badge value={label} /></div><dl className="mt-4 grid grid-cols-3 gap-2"><div><dt className="text-[9px] uppercase text-slate-400">Precision</dt><dd className="mt-1 text-sm font-semibold">{percentage(values?.precision)}</dd></div><div><dt className="text-[9px] uppercase text-slate-400">Recall</dt><dd className="mt-1 text-sm font-semibold">{percentage(values?.recall)}</dd></div><div><dt className="text-[9px] uppercase text-slate-400">F1</dt><dd className="mt-1 text-sm font-semibold">{percentage(values?.f1)}</dd></div></dl></article>;
+}
+
+export default function ModelEvaluation() {
+  const [state, setState] = useState(null);
+  const [metrics, setMetrics] = useState(null);
+  const [deterministic, setDeterministic] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const [trainingDataset, setTrainingDataset] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const [modelState, modelMetrics, deterministicMetrics, feedbackSummary, datasetSummary] = await Promise.all([
+        getMlStatus(), getMlMetrics(), getModelPerformance(),
+        getHumanVerificationSummary(), getMlTrainingDataset(),
+      ]);
+      setState(modelState); setMetrics(modelMetrics); setDeterministic(deterministicMetrics);
+      setFeedback(feedbackSummary); setTrainingDataset(datasetSummary);
+    } catch (requestError) { setError(requestError.message); } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const classes = state?.classDistribution || {};
+  const modelAvailable = metrics?.status === 'AVAILABLE' && metrics?.model;
+  const perClass = metrics?.perClass || {};
+  const modelClasses = metrics?.classOrder?.length ? metrics.classOrder : ['INCIDENT', 'NOISE'];
+  return <div className="space-y-6">
+    <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/50 p-6 shadow-sm md:p-8"><div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start"><div className="max-w-3xl"><div className="flex flex-wrap gap-2"><Badge value={state?.status || 'LOADING'} /><Badge value="SHADOW ONLY" /></div><h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">Model Evaluation</h1><p className="mt-3 text-sm leading-6 text-slate-600">The central comparison for the deterministic engine, the supervised XGBoost shadow recommendation, and validated human outcomes. Deterministic decisions remain authoritative.</p></div><button className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm disabled:opacity-50" type="button" disabled={loading} onClick={load}><RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />Refresh</button></div></section>
+    {error ? <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</section> : null}
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={BrainCircuit} label="Model status" value={loading ? '—' : readable(state?.status)} helper="Recommendation-only mode" /><Metric icon={Database} label="Model version" value={loading ? '—' : state?.modelVersion || 'NOT TRAINED'} helper={state?.algorithm || 'XGBoost'} /><Metric icon={Target} label="Validated examples" value={loading ? '—' : number(state?.validatedTrainingExamples)} helper={`Minimum ${number(state?.minimumPerClass)} per class`} /><Metric icon={ShieldCheck} label="Shadow predictions" value={loading ? '—' : number(state?.shadowPredictions)} helper="No final decisions changed" /><Metric icon={AlertTriangle} label="Incident labels" value={loading ? '—' : number(classes.INCIDENT)} helper="Validated human decisions" /><Metric icon={ShieldCheck} label="Noise labels" value={loading ? '—' : number(classes.NOISE)} helper="Validated human decisions" /><Metric icon={Database} label="Excluded records" value={loading ? '—' : number(trainingDataset?.exclusions?.total)} helper="Pending and unverified evidence never trains the model" /><Metric icon={GitCompareArrows} label="Deterministic disagreements" value={loading ? '—' : number(metrics?.modelDeterministicDisagreements)} helper={`${number(metrics?.modelHumanDisagreements)} model/human disagreements`} /></section>
+    <section className="grid gap-4 xl:grid-cols-2"><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-semibold text-slate-950">Human verification quality</h2><p className="mt-1 text-[11px] text-slate-500">Authenticated, current-revision outcomes only.</p><dl className="mt-4 grid grid-cols-2 gap-3"><Metric icon={Target} label="Validated feedback" value={feedback?.validatedExamples} helper={`${number(feedback?.validatedToday)} today`} /><Metric icon={GitCompareArrows} label="System agreement" value={percentage(feedback?.systemVsHuman?.agreementRate)} helper={`${number(feedback?.systemVsHuman?.disagreements)} disagreements`} /><Metric icon={BrainCircuit} label="Model agreement" value={percentage(feedback?.modelVsHuman?.agreementRate)} helper={`${number(feedback?.modelVsHuman?.compared)} compared`} /><Metric icon={Database} label="Training ready" value={trainingDataset?.eligibleExampleCount} helper={`${number(trainingDataset?.exclusions?.total)} excluded`} /></dl></article><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-semibold text-slate-950">Training eligibility</h2><p className="mt-1 text-[11px] text-slate-500">Human labels remain separate from system and model output.</p><dl className="mt-4 space-y-3 text-xs"><div className="flex justify-between border-b border-slate-100 pb-3"><dt>Conflict exclusions</dt><dd className="font-semibold">{number(trainingDataset?.exclusions?.conflicts)}</dd></div><div className="flex justify-between border-b border-slate-100 pb-3"><dt>Rejected / stale</dt><dd className="font-semibold">{number(trainingDataset?.exclusions?.rejected)}</dd></div><div className="flex justify-between border-b border-slate-100 pb-3"><dt>Grouping superseded</dt><dd className="font-semibold">{number(trainingDataset?.exclusions?.groupingSuperseded)}</dd></div><div className="flex justify-between"><dt>Readiness</dt><dd><Badge value={trainingDataset?.trainingReadiness?.status || 'NOT READY'} /></dd></div></dl></article></section>
+    {!modelAvailable ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-800">Model status</p><h2 className="mt-2 text-lg font-semibold text-amber-950">Insufficient data — validated training set is not ready</h2><p className="mt-2 text-xs leading-5 text-amber-800">No model has been trained and no performance figures are fabricated. Probability calibration: Not calibrated. Missing classes: {(state?.missingClasses || []).map(readable).join(', ') || 'none'}.</p><Link className="mt-4 inline-flex text-xs font-bold text-amber-900 underline" to="/noise-analysis?goldReview=true">Open Gold Review Queue</Link></section> : null}
+    <section className="grid gap-4 xl:grid-cols-[0.72fr_1.28fr]"><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-semibold text-slate-950">Overall model metrics</h2><p className="mt-1 text-[11px] leading-5 text-slate-500">Time-based held-out test results. Blank until a valid model exists.</p><dl className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-xl bg-slate-50 p-4"><dt className="text-[9px] font-bold uppercase text-slate-400">Accuracy</dt><dd className="mt-2 text-2xl font-semibold">{percentage(metrics?.accuracy)}</dd></div><div className="rounded-xl bg-slate-50 p-4"><dt className="text-[9px] font-bold uppercase text-slate-400">Macro F1</dt><dd className="mt-2 text-2xl font-semibold">{percentage(metrics?.macroF1)}</dd></div></dl><p className="mt-4 text-[10px] leading-5 text-slate-500">Noise precision is the initial safety priority. Uncalibrated probabilities are labeled MODEL SCORE.</p></article><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-semibold text-slate-950">Per-class performance</h2><div className="mt-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(modelClasses.length, 1)}, minmax(0, 1fr))` }}>{modelClasses.map((label) => <ClassMetrics key={label} label={label} values={perClass[label]} />)}</div></article></section>
+    <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]"><article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-5"><h2 className="text-sm font-semibold text-slate-950">Deterministic vs model vs human</h2><p className="mt-1 text-[11px] text-slate-500">Recent shadow comparisons. Human outcome stays blank until validated.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left"><thead className="bg-slate-50 text-[9px] uppercase tracking-[0.1em] text-slate-400"><tr>{['Alert', 'Deterministic', 'Model', 'Human', 'Model score'].map((item) => <th key={item} className="px-5 py-3">{item}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{(metrics?.comparisons || []).map((item) => <tr key={`${item.alertId}-${item.predictedAt}`}><td className="px-5 py-4 text-xs font-bold text-blue-700">#{item.alertNumber}</td><td className="px-5 py-4"><Badge value={item.deterministicDecision} /></td><td className="px-5 py-4"><Badge value={item.modelRecommendation} /></td><td className="px-5 py-4">{item.humanOutcome ? <Badge value={item.humanOutcome} /> : <span className="text-xs text-slate-400">Not verified</span>}</td><td className="px-5 py-4 text-xs font-semibold">{item.scoreLabel === 'MODEL_SCORE' ? 'Model score ' : ''}{percentage(item.modelScore)}</td></tr>)}{!metrics?.comparisons?.length ? <tr><td colSpan="5" className="px-5 py-10 text-center text-xs text-slate-500">No shadow model predictions exist.</td></tr> : null}</tbody></table></div></article><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-semibold text-slate-950">Confusion matrix</h2><p className="mt-1 text-[11px] text-slate-500">Confirmed human labels only: Incident and Noise. Evidence Pending remains unlabeled.</p>{metrics?.confusionMatrix ? <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(metrics?.classOrder?.length || 2, 1)}, minmax(0, 1fr))` }}>{metrics.confusionMatrix.flatMap((row, rowIndex) => row.map((value, columnIndex) => <div key={`${rowIndex}-${columnIndex}`} className="flex aspect-square items-center justify-center rounded-xl bg-slate-50 text-lg font-semibold">{number(value)}</div>))}</div> : <p className="mt-8 rounded-xl bg-slate-50 p-5 text-center text-xs text-slate-500">Not available until training succeeds.</p>}</article></section>
+    <section className="rounded-2xl border border-slate-200 bg-slate-950 p-5 text-white"><p className="text-xs font-semibold">Safety state</p><p className="mt-1 text-[10px] leading-5 text-slate-300">Deterministic engine: authoritative · ML mode: SHADOW · Automatic actions: disabled · Predictions create labels: no · Current deterministic evaluations: {number(deterministic?.evaluations?.total)}</p></section>
+  </div>;
+}

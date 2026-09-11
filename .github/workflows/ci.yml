@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_ENV: test
+      AUTH_DEVELOPMENT_ENABLED: "false"
+      EVIDENCE_COLLECTION_MODE: disabled
+      SLACK_HUMAN_VERIFICATION_ENABLED: "false"
+      ATLASSIAN_OPS_WRITE_ENABLED: "false"
+      ATLASSIAN_JIRA_WRITE_ENABLED: "false"
+      ATLASSIAN_JSM_WRITE_ENABLED: "false"
+      ML_AUTOMATED_RETRAINING_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a private GitHub repository
+        if: ${{ github.event.repository.private != true }}
+        run: |
+          echo "This application may only be validated from a private repository."
+          exit 1
+      - name: Reject tracked runtime secrets and private keys
+        shell: bash
+        run: |
+          forbidden="$(git ls-files | grep -E '(^|/)\.env(\.|$)|\.(pem|key|p12|pfx)$' | grep -v -E '(^|/)\.env(\.production)?\.example$|backend/ABCFSROOTCA\.pem$' || true)"
+          if [ -n "$forbidden" ]; then
+            echo "Tracked runtime secret material is not allowed."
+            echo "$forbidden"
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: /api
+        run: npm run build
+      - name: Validate production environment template
+        working-directory: backend
+        run: npm run deploy:validate-config -- --template
+      - name: Validate production compose file
+        env:
+          DATABASE_URL: postgres://placeholder:placeholder@database.example:5432/alert_noise_reduction
+          BACKEND_DOMAIN: alerts.example.com
+          BACKEND_ENV_FILE: ./backend/.env.production.example
+        run: |
+          docker compose -f compose.production.yml config --quiet
+      - name: Build production backend image
+        run: docker build --tag alert-reduction-backend:ci ./backend
+      - name: Build production frontend image
+        run: docker build --build-arg VITE_API_BASE_URL=/api --tag alert-reduction-frontend:ci ./frontend

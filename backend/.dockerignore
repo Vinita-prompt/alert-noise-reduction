@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+!.env.production.example
+node_modules
+artifacts
+test
+*.log
+.DS_Store
+.venv*
+data
+uploads
+*.key
+*.p12
+*.pfx
+*_private.pem

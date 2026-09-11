@@ -1,0 +1,5 @@
+node_modules/
+.env
+npm-debug.log*
+.venv-phase4/
+artifacts/ml-shadow/

@@ -1,0 +1,88 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-alert-reduction-backend:local}
+    build:
+      context: ./backend
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    env_file:
+      - ${BACKEND_ENV_FILE:-./backend/.env.production}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?A managed PostgreSQL DATABASE_URL is required}
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      PORT: 4000
+      EVIDENCE_ATTACHMENT_STORAGE_DIR: /app/data/evidence-attachments
+      ML_ARTIFACT_STORAGE_DIR: /app/data/ml-artifacts
+    volumes:
+      - alert_reduction_attachments:/app/data/evidence-attachments
+      - alert_reduction_ml_artifacts:/app/data/ml-artifacts
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 8s
+      start_period: 45s
+      retries: 3
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-alert-reduction-frontend:local}
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ${BACKEND_ENV_FILE:-./backend/.env.production}
+    environment:
+      BACKEND_DOMAIN: ${BACKEND_DOMAIN:?BACKEND_DOMAIN is required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  alert_reduction_attachments:
+    name: ${EVIDENCE_ATTACHMENT_VOLUME_NAME:-alert_reduction_attachments}
+  alert_reduction_ml_artifacts:
+    name: ${ML_ARTIFACT_VOLUME_NAME:-alert_reduction_ml_artifacts}
+  caddy_data:
+  caddy_config:
