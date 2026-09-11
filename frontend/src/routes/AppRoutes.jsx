@@ -18,7 +18,6 @@ import Login from '../pages/Login.jsx';
 import ModelEvaluation from '../pages/ModelEvaluation.jsx';
 import MonitoringSources from '../pages/MonitoringSources.jsx';
 import NagiosWorkspace from '../pages/NagiosWorkspace.jsx';
-import NoiseAnalysisDemo from '../pages/NoiseAnalysisDemo.jsx';
 import OperationalOverview from '../pages/OperationalOverview.jsx';
 import ProductSettings from '../pages/ProductSettings.jsx';
 import SlackData from '../pages/SlackData.jsx';
@@ -49,7 +48,6 @@ export default function AppRoutes() {
       <Route path="/problem-candidates/:problemId" element={<AccIssueDetail />} />
       <Route path="/monitoring-sources" element={<MonitoringSources />} />
       <Route path="/settings" element={<ProductSettings />} />
-      <Route path="/noise-analysis" element={admin(<NoiseAnalysisDemo />)} />
       <Route path="/alert-history" element={admin(<AlertHistory />)} />
       <Route path="/alert-history/:occurrenceId" element={admin(<AlertHistory />)} />
       <Route path="/model-evaluation" element={admin(<ModelEvaluation />)} />
